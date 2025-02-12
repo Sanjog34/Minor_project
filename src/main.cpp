@@ -231,7 +231,7 @@ void setup(){
 
 
 void loop(){
- if(digitalRead(PANIC)){
+ if(digitalRead(PANIC) && !button_pressed){
   delay(200);
   Serial.println("you pressed PANIC BUTTON. DO you really want to send SOS?");
 led(1,0,0);
