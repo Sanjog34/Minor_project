@@ -43,7 +43,7 @@ void sendATCommand(const char* command) {
     M65.println(command);
     delay(1000);
     // while (M65.available()) {
-    //   Serial.print("sent command : "); // Display response from M65
+    //   Serial.write(M65.read());  // Display response from M65
     //  
     // }
   
@@ -56,30 +56,6 @@ void sendATCommand(const char* command) {
       char c = GPS.read();
       gps.encode(c);
     }
-    Serial.println("\n---- GPS Data ----");
-    Serial.print("Latitude: ");
-    Serial.println(gps.location.lat(), 6);
-    Serial.print("Longitude: ");
-    Serial.println(gps.location.lng(), 6);
-    Serial.print("Altitude: ");
-    Serial.println(gps.altitude.meters());
-    Serial.print("Satellites: ");
-    Serial.println(gps.satellites.value());
-    Serial.print("HDOP: ");
-    Serial.println(gps.hdop.hdop());
-    Serial.print("time");
-    Serial.print(gps.time.hour());
-    Serial.print(":");
-    Serial.print(gps.time.minute());
-    Serial.print(":");
-    Serial.println(gps.time.second());
-    Serial.print("date :");
-    Serial.print(gps.date.year());
-    Serial.print("/");
-    Serial.print(gps.date.month());
-    Serial.print("/");
-    Serial.println(gps.date.day());
-    
     }
   
 
@@ -91,10 +67,7 @@ void sendATCommand(const char* command) {
 
 
   void Create_message(){
-    while(GPS.available()>0){
-    char c = GPS.read();
-    gps.encode(c);
-  }
+  ReadGPS();
   delay(500);
   dtostrf(gps.location.lat(),0,5,buff);
   Serial.print(buff);
