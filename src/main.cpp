@@ -96,7 +96,6 @@ void sendATCommand(const char* command) {
     gps.encode(c);
   }
   delay(500);
-  
   dtostrf(gps.location.lat(),0,5,buff);
   Serial.print(buff);
   strcat(lk,buff);
@@ -104,24 +103,22 @@ void sendATCommand(const char* command) {
   dtostrf(gps.location.lng(),0,5,buff);
   Serial.println(buff);
   strcat(lk,buff);
-    strcat(TIME,int_to_char(gps.date.year()));
-    strcat(TIME,":");
-    strcat(TIME,int_to_char(gps.date.month()));
-    strcat(TIME,":");
-    strcat(TIME,int_to_char(gps.date.day()));
-strcpy(message,"the date is ");
-strcat(message,TIME);
- strcpy(TIME,"");
- strcat(TIME,int_to_char(gps.time.hour()));
- strcat(TIME,":");
- strcat(TIME,int_to_char(gps.time.minute()));
- strcat(TIME,":");
- strcat(TIME,int_to_char(gps.time.second()));
-strcat(message," and the time is ");
-strcat(message,TIME);
-strcpy(TIME,"");
-
-
+  strcat(TIME,int_to_char(gps.date.year()));
+  strcat(TIME,":");
+  strcat(TIME,int_to_char(gps.date.month()));
+  strcat(TIME,":");
+  strcat(TIME,int_to_char(gps.date.day()));
+  strcpy(message,"the date is ");
+  strcat(message,TIME);
+  strcpy(TIME,"");
+  strcat(TIME,int_to_char(gps.time.hour()));
+  strcat(TIME,":");
+  strcat(TIME,int_to_char(gps.time.minute()));
+  strcat(TIME,":");
+  strcat(TIME,int_to_char(gps.time.second()));
+  strcat(message," and the time is ");
+  strcat(message,TIME);
+  strcpy(TIME,"");
   }
 
 
