@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Data to ESP32</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        input, button {
+            margin: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        h2 {
+            color: #333;
+        }
+        #response {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #007BFF;
+        }
+    </style>
+</head>
+<body>
+    <h2>Send Message with Delay to ESP32</h2>
+
+    <label for="numberInput">Enter Phone number:</label><br>
+    <input type="number" id="numberInput" placeholder="Type phone number"><br><br>
+    
+    <label for="messageInput">Enter Message:</label><br>
+    <input type="text" id="messageInput" placeholder="Type your message"><br><br>
+    
+    <label for="delayInput">Enter Delay (ms):</label><br>
+    <input type="number" id="delayInput" placeholder="Enter delay in milliseconds"><br><br>
+    
+    <button onclick="sendData()">Send</button>
+    
+    <p id="response"></p>
+
+    <script>
+        function sendData() {
+            const phone_no = document.getElementById("numberInput").value;
+            const message = document.getElementById("messageInput").value;
+            const delay = document.getElementById("delayInput").value;
+
+            if (!message || !delay) {
+                document.getElementById("response").innerText = "Please enter all phone number , message and delay!";
+                return;
+            }
+
+            const espIP = "http://192.168.4.1"; // IP of the ESP32 in AP mode
+            const url = espIP + "/send-data";
+
+            const formData = new FormData();
+            formData.append("phone_no", phone_no);
+            formData.append("message", message);
+            formData.append("delay", delay);
+
+            // Send the data to ESP32 via POST request
+            fetch(url, { method: "POST", body: formData })
+                .then(response => response.text())
+                .then(text => {
+                    document.getElementById("response").innerText = "ESP32 Response: " + text;
+                })
+                .catch(error => {
+                    document.getElementById("response").innerText = "Error: " + error;
+                });
+        }
+    </script>
+</body>
+</html>
