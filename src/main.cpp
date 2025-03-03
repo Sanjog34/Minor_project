@@ -5,14 +5,19 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <SPIFFS.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+#define SDA_PIN 21
+#define SCL_PIN 22
 
 const char* ssid = "ESP32_Hotspot";  
 const char* password = "12345678";    
 
-#define PANIC 25
-#define TERMINATE 13
+#define PANIC 4
+#define TERMINATE 34
 // #define INTERVAL 20000
-#define RED 21
+#define RED 23
 #define GREEN 19
 #define BLUE 18
 
@@ -24,21 +29,41 @@ HardwareSerial M65(1);
 HardwareSerial GPS(2); // UART2 for Neo6M GPS Module
 TinyGPSPlus gps;        // Create TinyGPS++ object
 #define GPS_TX_PIN 17  // ESP32 TX pin connected to GPS RX
-#define GPS_RX_PIN 14 // ESP32 RX pin connected to GPS TX
+#define GPS_RX_PIN 16 // ESP32 RX pin connected to GPS TX
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 bool IsSettingUp=false;
 bool button_pressed = false;
 bool termination_button =false;
 long int time_keeper;
+bool NEW=true;
 int count=0;
 char buff[10]="";
 char fromUser[50]="I need help. My location : ";
-char message[200]="";
-char TIME[15]="";
-char lk[50]="https://www.google.com/maps?q=";
-String phoneNumber = "+9779708849452";
-int delayVal=20000;
+char* message;
+char* lk;
+String phoneNumber = "+9779806512990";
+int delayVal=30000;
 
 WebServer server(80);
+
+void disp(String mes){
+  // Wire.begin(SDA_PIN, SCL_PIN);  // Initialize I2C with custom pins
+  lcd.clear();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print(mes);
+  // Wire.end();
+}
+void disp2(String mes1, String mes2){
+  // Wire.begin(SDA_PIN, SCL_PIN);  // Initialize I2C with custom pins
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(mes1);
+  lcd.setCursor(0, 1);
+  lcd.print(mes2);
+  // Wire.end();
+}
 
 void led(int red, int green ,int blue){
     digitalWrite(RED,red);
@@ -47,11 +72,11 @@ void led(int red, int green ,int blue){
   }
 
   void blink(int del){
-    led(1,1,1);
+    led(1,1,0);
     delay(del);
     led(0,0,0);
     delay(del);
-    led(1,1,1);
+    led(1,1,0);
     delay(del);
     led(0,0,0);
   }
@@ -70,14 +95,17 @@ void handleData() {
         Serial.println("Converted Delay: " + String(delayVal) + " ms");
         
         // Simulate delay
-        delay(delayVal);
+        // delay(delayVal);
         
         server.send(200, "text/plain","phone number: "+ phoneNumber +  " Message: " + MSG + "\nDelay: " + String(delayVal) + " ms");
         IsSettingUp=false;
         Serial.println("Setup done(from user)!!!!!");
+        disp("Done setting up!");
         blink(100);
         led(0,0,0);
         WiFi.mode(WIFI_OFF);
+        delay(1000);
+        delay(500);
     }
     
     else {
@@ -106,7 +134,7 @@ void sendATCommand(const char* command) {
     delay(1000);
     // while (M65.available()) {
     //   Serial.write(M65.read());  // Display response from M65
-    //  
+     
     // }
   
   }
@@ -172,17 +200,23 @@ void Send_message(char MESSAGE[]){
 
 
 void panic_mode(){
+  disp2("SENDING MESSAGE", phoneNumber);
   delay(100);
   led(0,0,1);
   time_keeper=millis();
   count++;
   button_pressed=true;
   termination_button=false;
+  message = (char*)malloc(500);
+  lk = (char*)malloc(50);
+  strcpy(lk,"https://www.google.com/maps?q=");
   strcpy(message,fromUser);
   Create_message();
   Serial.println(message);
   Send_message(message);
-  strcpy(lk,"https://www.google.com/maps?q=");
+  disp2("MESSAGE SENT!!",String(count));
+  free(message);
+  free(lk);
   delay(100);
   }
   
@@ -190,17 +224,24 @@ void panic_mode(){
 
   void terminate_mode(){
     if(button_pressed){
+    disp2("TERMINATING","PANIC MODE");
     delay(100);
     led(0,1,0);
     button_pressed=false;
     termination_button=true;
     count=0;
+    message = (char*)malloc(500);
     strcpy(message,"termination button pressed.");
     Serial.println(message);
      Send_message(message);
     Serial.println("panic mode deactivated");
+    free(message);
     led(0,0,0);
     delay(100);
+    disp2("PANIC MODE","TERMINATED");
+    delay(2000);
+    delay(200);
+    NEW=true;
     }
     else{
    blink(500);
@@ -216,21 +257,27 @@ void setup(){
     pinMode(GREEN,OUTPUT);
     pinMode(BLUE, OUTPUT);
     Serial.begin(115200); // For debugging
+    Wire.begin(SDA_PIN, SCL_PIN); 
+    lcd.begin(16, 2); 
+    lcd.backlight();
+   
+    delay(500);
+    disp("M65 SETUP");
     led(0,0,1);
     Serial.println("Initializing M65 Module..."); 
     M65.begin(9600, SERIAL_8N1, RXM65_PIN, TXM65_PIN); // Initialize UART1 with 9600 baud rate
     delay(3000); // Wait for the module to initialize
-    Serial.println("Initializing M65 Module..."); 
-    delay(1000);
     sendATCommand("AT");
     delay(1000);
-
+    disp("GPS SETUP");
+    Serial.println("Initializing Neo6M GPS Module...");
     GPS.begin(9600, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN); // Initialize UART2 for GPS
     delay(2000); // Wait for GPS module to initialize
-    Serial.println("Initializing Neo6M GPS Module...");
     led(0,1,0);
 
     Serial.println("press 'P' to setup device and press 'T' to go with default values\n");
+    disp2("PRESS: P--SETUP","       T--SKIP");
+
     while(!digitalRead(PANIC) && !digitalRead(TERMINATE));
         if(digitalRead(PANIC)){
             IsSettingUp=true;
@@ -239,6 +286,8 @@ void setup(){
             Serial.println("ESP32 Access Point Started!");
             Serial.print("ESP32 AP IP Address: ");
             Serial.println(WiFi.softAPIP());
+            String ipAddress = WiFi.softAPIP().toString();
+             disp2("SETUP LINK:",ipAddress);
         
             if (!SPIFFS.begin(true)) {
                 Serial.println("SPIFFS Initialization Failed!");
@@ -253,6 +302,7 @@ void setup(){
 else if(digitalRead(TERMINATE)){
     delay(500);
     IsSettingUp=false;
+    disp("READY TO GO!!");
     Serial.println("Ready to go");
     blink(100);
     led(0,0,0);
@@ -265,14 +315,22 @@ void loop(){
  while(IsSettingUp){
     server.handleClient();
  }
-
+ if(!button_pressed && NEW){
+ disp2("WATCH ON","STANDBY MODE");
+ NEW=false;
+ }
  if(digitalRead(PANIC) && !button_pressed){
   delay(200);
+  disp2("PANIC BTN PRESSED!!","SEND MESSAGE?(P)");
   Serial.println("you pressed PANIC BUTTON. DO you really want to send SOS?");
 led(1,0,0);
-  while(!digitalRead(PANIC)){
-  }
- panic_mode();
+while(!digitalRead(PANIC) && !digitalRead(TERMINATE));
+if(digitalRead(PANIC))
+  panic_mode();
+else if(digitalRead(TERMINATE)){
+  led(0,0,0);
+  NEW=true;
+}
  }
  
 
@@ -282,7 +340,7 @@ if(button_pressed && !termination_button){
     panic_mode();
 }
 }
-if(digitalRead(TERMINATE)){
+if(digitalRead(TERMINATE) && button_pressed){
   terminate_mode();
 }
 }
