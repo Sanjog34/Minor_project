@@ -6,7 +6,11 @@
 #include <WebServer.h>
 #include <SPIFFS.h>
 #include <LiquidCrystal_I2C.h>
-
+/*
+#ifndef DEBUG
+#define DEBUG
+#endif
+*/
 #define DEBUG // Comment this line to disable debug prints
 #ifdef DEBUG
 #define DEBUG_PRINT(x) Serial.println(x)
@@ -40,7 +44,7 @@ bool Wifi_status = false;
 bool NEW = true;
 long int time_keeper;
 int count = 0;
-const char *ssid = "ESP32_Hotspot";
+const char *ssid = "ReadyRescue";
 const char *password = "12345678";
 String fromUser = "I need help. My location : ";
 String message = "";
@@ -98,7 +102,7 @@ void handleData()
     DEBUG_PRINT("Received Phone no. :" + phoneNumber);
     DEBUG_PRINT("Received Message: " + fromUser);
     DEBUG_PRINT("Received Delay: " + delayTime);
-    delayVal = delayTime.toInt();
+    delayVal = delayTime.toInt()*1000;
     DEBUG_PRINT("Converted Delay: " + String(delayVal) + " ms");
     server.send(200, "text/plain", "phone number: " + phoneNumber + " Message: " + fromUser + "\nDelay: " + String(delayVal) + " ms");
     IsSettingUp = false;
@@ -182,6 +186,7 @@ void ReadGPS()
   {
     char c = GPS.read();
     gps.encode(c);
+    Serial.write(c);
   }
 }
 
@@ -205,7 +210,7 @@ void Send_message(String MESSAGE)
   Command = "AT+CMGS=\"" + phoneNumber + "\"";
   sendATCommand(Command);
   delay(500);
-  M65.print(MESSAGE); // Message content
+  M65.print(MESSAGE); // Message contentge
   delay(500);
   M65.write(26); // End message with Ctrl+Z (ASCII 26)
   delay(500);

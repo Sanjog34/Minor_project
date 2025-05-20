@@ -5,7 +5,6 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <SPIFFS.h>
-#include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
 #define DEBUG // Comment this line to disable debug prints
@@ -17,13 +16,8 @@
 
 #define SDA_PIN 21
 #define SCL_PIN 22
-
-const char *ssid = "ESP32_Hotspot";
-const char *password = "12345678";
-
-#define PANIC 35//4
+#define PANIC 35
 #define TERMINATE 34
-// #define INTERVAL 20000
 #define RED 23
 #define GREEN 19
 #define BLUE 18
@@ -38,17 +32,18 @@ TinyGPSPlus gps;       // Create TinyGPS++ object
 #define GPS_RX_PIN 16  // ESP32 RX pin connected to GPS TX
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
+
 bool IsSettingUp = false;
 bool button_pressed = false;
 bool termination_button = false;
 bool Wifi_status = false;
-long int time_keeper;
 bool NEW = true;
+long int time_keeper;
 int count = 0;
-char buff[10] = "";
-char fromUser[50] = "I need help. My location : ";
-char *message;
-char *lk;
+const char *ssid = "ESP32_Hotspot";
+const char *password = "12345678";
+String fromUser = "I need help. My location : ";
+String message = "";
 String resp = "";
 String phoneNumber = "";
 String PhoneName = "";
@@ -65,6 +60,7 @@ void disp(String mes)
   lcd.setCursor(0, 0);
   lcd.print(mes);
 }
+
 void disp2(String mes1, String mes2)
 {
   lcd.clear();
@@ -97,15 +93,14 @@ void handleData()
   if (server.hasArg("phone_no") && server.hasArg("message") && server.hasArg("delay"))
   {
     phoneNumber = server.arg("phone_no");
-    String MSG = server.arg("message");
-    strcpy(fromUser, MSG.c_str());
+    fromUser = server.arg("message");
     String delayTime = server.arg("delay");
     DEBUG_PRINT("Received Phone no. :" + phoneNumber);
-    DEBUG_PRINT("Received Message: " + MSG);
+    DEBUG_PRINT("Received Message: " + fromUser);
     DEBUG_PRINT("Received Delay: " + delayTime);
     delayVal = delayTime.toInt();
     DEBUG_PRINT("Converted Delay: " + String(delayVal) + " ms");
-    server.send(200, "text/plain", "phone number: " + phoneNumber + " Message: " + MSG + "\nDelay: " + String(delayVal) + " ms");
+    server.send(200, "text/plain", "phone number: " + phoneNumber + " Message: " + fromUser + "\nDelay: " + String(delayVal) + " ms");
     IsSettingUp = false;
     DEBUG_PRINT("Setup done(from user)!!!!!");
     disp("Done setting up!");
@@ -114,7 +109,6 @@ void handleData()
     WiFi.mode(WIFI_OFF);
     Wifi_status = false;
     delay(1000);
-    delay(500);
   }
   else
   {
@@ -139,9 +133,6 @@ void sendATCommand(String command)
   DEBUG_PRINT(command);
   M65.println(command);
   delay(1000);
-  // while (M65.available()) {
-  // Serial.write(M65.read()); // Display response from M65
-  // }
 }
 
 void PhoneBook(int mode, int index)
@@ -194,46 +185,30 @@ void ReadGPS()
   }
 }
 
-char *int_to_char(int num)
-{
-  itoa(num, buff, 10);
-  return buff;
-}
-
 void Create_message()
 {
   ReadGPS();
   delay(500);
-  dtostrf(gps.location.lat(), 0, 5, buff);
-  strcat(lk, buff);
-  strcat(lk, ",");
-  dtostrf(gps.location.lng(), 0, 5, buff);
-  strcat(lk, buff);
-  strcat(message, lk);
+  message.reserve(200);
+  message += fromUser;
+  message += " https://www.google.com/maps?q=";
+  message += String(gps.location.lat(), 6) + "," + String(gps.location.lng(), 6);
 }
 
-void Send_message(char MESSAGE[])
+void Send_message(String MESSAGE)
 {
-  delay(1000);
+  delay(500);
   sendATCommand("AT");
-  delay(1000);
-
-  // Set SMS text mode
-  sendATCommand("AT+CMGF=1");
-  delay(1000);
-
+  delay(500);
+  sendATCommand("AT+CMGF=1"); // Set SMS text mode
+  delay(500);
   Command = "AT+CMGS=\"" + phoneNumber + "\"";
   sendATCommand(Command);
-  delay(1000);
-
-  // Message content
-  M65.print(MESSAGE);
   delay(500);
-
-  // End message with Ctrl+Z (ASCII 26)
-  M65.write(26);
-  delay(3000);
-
+  M65.print(MESSAGE); // Message content
+  delay(500);
+  M65.write(26); // End message with Ctrl+Z (ASCII 26)
+  delay(500);
   DEBUG_PRINT("Message Sent!");
   blink(100);
   led(0, 0, 1);
@@ -248,16 +223,11 @@ void panic_mode()
   count++;
   button_pressed = true;
   termination_button = false;
-  message = (char *)malloc(500);
-  lk = (char *)malloc(50);
-  strcpy(lk, "https://www.google.com/maps?q=");
-  strcpy(message, fromUser);
   Create_message();
   DEBUG_PRINT(message);
   Send_message(message);
   disp2("MESSAGE SENT!!", String(count));
-  free(message);
-  free(lk);
+  message = "";
   delay(100);
 }
 
@@ -271,17 +241,15 @@ void terminate_mode()
     button_pressed = false;
     termination_button = true;
     count = 0;
-    message = (char *)malloc(500);
-    strcpy(message, "termination button pressed.");
+    message += "termination button pressed.";
     DEBUG_PRINT(message);
     Send_message(message);
     DEBUG_PRINT("panic mode deactivated");
-    free(message);
+    message = "";
     led(0, 0, 0);
     delay(100);
     disp2("PANIC MODE", "TERMINATED");
-    delay(2000);
-    delay(200);
+    delay(500);
     NEW = true;
   }
   else
@@ -326,15 +294,14 @@ void setup()
   led(0, 0, 1);
   DEBUG_PRINT("Initializing M65 Module...");
   M65.begin(9600, SERIAL_8N1, RXM65_PIN, TXM65_PIN); // Initialize GSM with 9600 baud rate
-  delay(3000);                                       // Wait for the module to initialize
+  delay(1000);                                       // Wait for the module to initialize
   sendATCommand("AT");
   delay(1000);
   disp("GPS SETUP");
   DEBUG_PRINT("Initializing Neo6M GPS Module...");
   GPS.begin(9600, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN); // Initialize GPS with 9600 baud rate
-  delay(2000);                                         // Wait for GPS module to initialize
+  delay(1000);                                         // Wait for GPS module to initialize
   led(0, 1, 0);
-
   DEBUG_PRINT("fetching previous data");
   disp2("INITIALIZING", "DEVICE");
   PhoneBook(0, 1);
@@ -370,8 +337,7 @@ void loop()
     }
     while (IsSettingUp)
     {
-      // Serial.println("handeling client");
-      server.handleClient();
+      server.handleClient(); // Serial.println("handeling client");
     }
     NEW = true;
     PhoneBook(1, 1);
@@ -389,8 +355,7 @@ void loop()
     disp2("PANIC BTN PRESSED!!", "SEND MESSAGE?(P)");
     DEBUG_PRINT("you pressed PANIC BUTTON. DO you really want to send SOS?");
     led(1, 0, 0);
-    while (!digitalRead(PANIC) && !digitalRead(TERMINATE))
-      ;
+    while (!digitalRead(PANIC) && !digitalRead(TERMINATE));
     if (digitalRead(PANIC))
       panic_mode();
     else if (digitalRead(TERMINATE))

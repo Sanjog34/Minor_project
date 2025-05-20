@@ -11,7 +11,7 @@ void setup() {
     lcd.begin(16, 2);  // Initialize LCD with 16x2 size
     lcd.backlight();
     lcd.setCursor(0, 0);
-    lcd.print("Hello, nabin");
+    lcd.print("Emergency Rsponse");
     Wire.end();
 }
 

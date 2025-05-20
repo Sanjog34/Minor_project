@@ -1,46 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Send Data to ESP32</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Setup the device</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to right, #e0f7fa, #a7ffeb);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 16px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 90%;
             text-align: center;
-            padding: 20px;
-            background-color: #f4f4f4;
         }
-        input, button {
-            margin: 10px;
-            padding: 10px;
-            font-size: 16px;
-        }
+
         h2 {
-            color: #333;
+            color: #00796b;
+            margin-bottom: 20px;
         }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+            text-align: left;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px 14px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            border-color: #26a69a;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 12px 20px;
+            font-size: 16px;
+            background-color: #00796b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #004d40;
+        }
+
         #response {
             margin-top: 20px;
-            font-size: 18px;
+            font-size: 16px;
             color: #007BFF;
+        }
+
+        /* Hidden by default */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Dialog overlay */
+        #successDialog {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex; /* visible only if not hidden */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        /* Dialog box */
+        .dialog-content {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            max-width: 320px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Animated checkmark SVG */
+        .checkmark {
+            width: 72px;
+            height: 72px;
+            stroke: #00796b;
+            stroke-width: 5;
+            stroke-miterlimit: 10;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+            margin: 0 auto 15px auto;
+            fill: none;
+        }
+
+        .checkmark__circle {
+            stroke-dasharray: 166;
+            stroke-dashoffset: 166;
+            stroke-width: 5;
+            stroke-miterlimit: 10;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+        }
+
+        .checkmark__check {
+            stroke-dasharray: 48;
+            stroke-dashoffset: 48;
+            animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.6s forwards;
+        }
+
+        @keyframes stroke {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        /* Dialog button */
+        .dialog-content button {
+            margin-top: 20px;
+            padding: 10px 28px;
+            font-size: 16px;
+            background-color: #00796b;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .dialog-content button:hover {
+            background-color: #004d40;
         }
     </style>
 </head>
 <body>
-    <h2>Send Message with Delay to ESP32</h2>
+    <div class="container">
+        <h2>Setup your device</h2>
 
-    <label for="numberInput">Enter Phone number:</label><br>
-    <input type="number" id="numberInput" placeholder="Type phone number"><br><br>
-    
-    <label for="messageInput">Enter Message:</label><br>
-    <input type="text" id="messageInput" placeholder="Type your message"><br><br>
-    
-    <label for="delayInput">Enter Delay (ms):</label><br>
-    <input type="number" id="delayInput" placeholder="Enter delay in milliseconds"><br><br>
-    
-    <button onclick="sendData()">Send</button>
-    
-    <p id="response"></p>
+        <label for="numberInput">Phone Number:</label>
+        <input type="number" id="numberInput" placeholder="Type phone number" />
+
+        <label for="messageInput">Message:</label>
+        <input type="text" id="messageInput" placeholder="Type your message" />
+
+        <label for="delayInput">Delay (seconds):</label>
+        <input type="number" id="delayInput" placeholder="Enter delay in seconds" />
+
+        <button onclick="sendData()">Send</button>
+
+        <p id="response"></p>
+    </div>
+
+    <!-- Success dialog -->
+    <div id="successDialog" class="hidden">
+        <div class="dialog-content">
+            <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                <circle class="checkmark__circle" cx="26" cy="26" r="25" />
+                <path class="checkmark__check" d="M14 27l7 7 16-16" />
+            </svg>
+            <p>Service is done setting up!</p>
+            <button onclick="closeDialog()">OK</button>
+        </div>
+    </div>
 
     <script>
         function sendData() {
@@ -48,12 +193,12 @@
             const message = document.getElementById("messageInput").value;
             const delay = document.getElementById("delayInput").value;
 
-            if (!message || !delay) {
-                document.getElementById("response").innerText = "Please enter all phone number , message and delay!";
+            if (!phone_no || !message || !delay) {
+                document.getElementById("response").innerText = "Please enter phone number, message, and delay!";
                 return;
             }
 
-            const espIP = "http://192.168.4.1"; // IP of the ESP32 in AP mode
+            const espIP = "http://192.168.4.1";
             const url = espIP + "/send-data";
 
             const formData = new FormData();
@@ -61,15 +206,20 @@
             formData.append("message", message);
             formData.append("delay", delay);
 
-            // Send the data to ESP32 via POST request
             fetch(url, { method: "POST", body: formData })
                 .then(response => response.text())
                 .then(text => {
-                    document.getElementById("response").innerText = "ESP32 Response: " + text;
+                //    document.getElementById("response").innerText = "ESP32 Response: " + text;
+                    // Show success dialog
+                    document.getElementById("successDialog").classList.remove("hidden");
                 })
                 .catch(error => {
                     document.getElementById("response").innerText = "Error: " + error;
                 });
+        }
+
+        function closeDialog() {
+            document.getElementById("successDialog").classList.add("hidden");
         }
     </script>
 </body>
